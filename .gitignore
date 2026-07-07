@@ -42,3 +42,6 @@ next-env.d.ts
 
 # secreat
 imp.txt
+
+# API Key
+.env.local
