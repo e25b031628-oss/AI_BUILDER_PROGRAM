@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { onAuthStateChanged } from "firebase/auth";
 import { collection, getDocs } from "firebase/firestore";
 import { getDownloadURL, ref } from "firebase/storage";
-import { db, storage } from "@/lib/firebase";
+import { auth, db, storage } from "../lib/firebase";
 import { useCart } from "@/lib/CartContext";
 
 type Product = {
@@ -102,7 +104,22 @@ export default function Home() {
 	const [products, setProducts] = useState<Product[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState("");
+	const [authChecked, setAuthChecked] = useState(false);
+	const router = useRouter();
 	const { addToCart } = useCart();
+
+	useEffect(() => {
+		const unsubscribe = onAuthStateChanged(auth, (user) => {
+			if (!user) {
+				router.push("/signup");
+				return;
+			}
+
+			setAuthChecked(true);
+		});
+
+		return unsubscribe;
+	}, [router]);
 
 	useEffect(() => {
 		let isMounted = true;
@@ -217,6 +234,16 @@ export default function Home() {
 
 		return Array.from(groups.values());
 	}, [products]);
+
+	if (!authChecked) {
+		return (
+			<main className="flex min-h-screen items-center justify-center bg-slate-950 px-4 text-slate-100">
+				<div className="rounded-3xl border border-cyan-500/20 bg-slate-900/80 px-6 py-4 text-sm text-slate-300 shadow-xl shadow-cyan-950/10">
+					Checking your session...
+				</div>
+			</main>
+		);
+	}
 
 	return (
 		<main className="min-h-screen bg-slate-950 px-4 py-12 text-slate-100 sm:px-6 lg:px-8">
