@@ -1,10 +1,12 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../lib/firebase";
 
 export default function SignupPage() {
+	const router = useRouter();
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [loading, setLoading] = useState(false);
@@ -20,6 +22,7 @@ export default function SignupPage() {
 			setMessage("Account created successfully.");
 			setEmail("");
 			setPassword("");
+			router.push("/");
 		} catch (error) {
 			setMessage(
 				error instanceof Error ? error.message : "Failed to create account."

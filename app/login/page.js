@@ -1,10 +1,12 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../lib/firebase";
 
 export default function LoginPage() {
+	const router = useRouter();
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [loading, setLoading] = useState(false);
@@ -20,6 +22,7 @@ export default function LoginPage() {
 			setMessage("Logged in successfully.");
 			setEmail("");
 			setPassword("");
+			router.push("/");
 		} catch (error) {
 			setMessage(
 				error instanceof Error ? error.message : "Failed to log in."
