@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
 import { collection, getDocs } from "firebase/firestore";
@@ -105,6 +105,11 @@ export default function Home() {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState("");
 	const [authChecked, setAuthChecked] = useState(false);
+	const [searchText, setSearchText] = useState("");
+	const [activeSearchText, setActiveSearchText] = useState("");
+	const [searchLoading, setSearchLoading] = useState(false);
+	const [fallbackSearch, setFallbackSearch] = useState(false);
+	const [matchedProductNames, setMatchedProductNames] = useState<string[]>([]);
 	const router = useRouter();
 	const { addToCart } = useCart();
 
@@ -235,6 +240,109 @@ export default function Home() {
 		return Array.from(groups.values());
 	}, [products]);
 
+	const filteredGroupedProducts = useMemo(() => {
+		if (!activeSearchText.trim()) {
+			return groupedProducts;
+		}
+
+		if (fallbackSearch) {
+			const keyword = activeSearchText.toLowerCase();
+
+			return groupedProducts
+				.map((group) => ({
+					...group,
+					products: group.products.filter((product) =>
+						product.name.toLowerCase().includes(keyword),
+					),
+				}))
+				.filter((group) => group.products.length > 0);
+		}
+
+		if (matchedProductNames.length > 0) {
+			const matchedLookup = new Set(
+				matchedProductNames.map((productName) => productName.toLowerCase()),
+			);
+
+			return groupedProducts
+				.map((group) => ({
+					...group,
+					products: group.products.filter((product) =>
+						matchedLookup.has(product.name.toLowerCase()),
+					),
+				}))
+				.filter((group) => group.products.length > 0);
+		}
+
+		return groupedProducts;
+	}, [activeSearchText, fallbackSearch, groupedProducts, matchedProductNames]);
+
+	const handleSearchSubmit = async (event: FormEvent<HTMLFormElement>) => {
+		event.preventDefault();
+
+		const query = searchText.trim();
+
+		if (!query) {
+			return;
+		}
+
+		setSearchLoading(true);
+		setActiveSearchText(query);
+		setFallbackSearch(false);
+		setMatchedProductNames([]);
+
+		try {
+			const response = await fetch("/api/ai/smart-search", {
+				method: "POST",
+				headers: {
+					"content-type": "application/json",
+				},
+				body: JSON.stringify({
+					query,
+					productNames: products.map((product) => product.name),
+				}),
+			});
+
+			const data = (await response.json()) as {
+				matchedProducts?: unknown;
+				fallback?: boolean;
+			};
+
+			const returnedProducts = Array.isArray(data.matchedProducts)
+				? data.matchedProducts.filter(
+					(productName): productName is string => typeof productName === "string",
+				)
+				: [];
+
+			if (!data.fallback && returnedProducts.length > 0) {
+				setFallbackSearch(false);
+				setMatchedProductNames(returnedProducts);
+				document.getElementById("products-section")?.scrollIntoView({
+					behavior: "smooth",
+					block: "start",
+				});
+				return;
+			}
+		} catch {
+			// Fall back to keyword search below.
+		} finally {
+			setSearchLoading(false);
+		}
+
+		setFallbackSearch(true);
+		setMatchedProductNames([]);
+		document.getElementById("products-section")?.scrollIntoView({
+			behavior: "smooth",
+			block: "start",
+		});
+	};
+
+	const clearSearch = () => {
+		setSearchText("");
+		setActiveSearchText("");
+		setFallbackSearch(false);
+		setMatchedProductNames([]);
+	};
+
 	if (!authChecked) {
 		return (
 			<main className="flex min-h-screen items-center justify-center bg-slate-950 px-4 text-slate-100">
@@ -260,6 +368,44 @@ export default function Home() {
 						tiles link directly to the matching Firestore-backed category pages.
 					</p>
 				</header>
+
+				<section className="rounded-3xl border border-cyan-500/20 bg-slate-900/70 p-5 shadow-xl shadow-cyan-950/10 sm:p-6">
+					<form onSubmit={handleSearchSubmit} className="flex flex-col gap-3 sm:flex-row">
+						<div className="flex-1 space-y-2">
+							<label htmlFor="smart-search" className="text-sm font-medium text-slate-200">
+								Search products or categories
+							</label>
+							<input
+								id="smart-search"
+								type="text"
+								value={searchText}
+								onChange={(event) => setSearchText(event.target.value)}
+								placeholder="What are you looking for? (e.g. quick breakfast stuff)"
+								className="w-full rounded-2xl border border-cyan-500/20 bg-slate-950/70 px-4 py-3 text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/30"
+							/>
+						</div>
+
+						<div className="flex items-end gap-3">
+							<button
+								type="submit"
+								disabled={searchLoading}
+								className="inline-flex items-center justify-center rounded-2xl bg-cyan-400 px-5 py-3 font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
+							>
+								{searchLoading ? "Searching..." : "Search"}
+							</button>
+
+							{activeSearchText ? (
+								<button
+									type="button"
+									onClick={clearSearch}
+									className="inline-flex items-center justify-center rounded-2xl border border-cyan-500/20 bg-slate-950/70 px-5 py-3 text-sm font-semibold text-cyan-300 transition hover:border-cyan-400/40 hover:text-cyan-200"
+								>
+									Clear search
+								</button>
+							) : null}
+						</div>
+					</form>
+				</section>
 
 				<section className="space-y-4">
 					<div className="flex items-end justify-between gap-4">
@@ -318,7 +464,7 @@ export default function Home() {
 					)}
 				</section>
 
-				<section className="space-y-8">
+				<section id="products-section" className="space-y-8">
 					<div className="flex items-end justify-between gap-4">
 						<div>
 							<p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-300/80">
@@ -341,13 +487,15 @@ export default function Home() {
 						<div className="rounded-3xl border border-rose-500/30 bg-rose-500/10 p-10 text-sm text-rose-200 shadow-lg">
 							{error}
 						</div>
-					) : groupedProducts.length === 0 ? (
+					) : filteredGroupedProducts.length === 0 ? (
 						<div className="rounded-3xl border border-dashed border-cyan-500/25 bg-slate-900/60 p-10 text-sm text-slate-300 shadow-lg">
-							No products found in Firestore.
+							{activeSearchText
+								? "No matching products were found for this search."
+								: "No products found in Firestore."}
 						</div>
 					) : (
 						<div className="space-y-10">
-							{groupedProducts.map((group) => (
+							{filteredGroupedProducts.map((group) => (
 								<section key={group.slug} className="space-y-4">
 									<div className="flex items-end justify-between gap-4">
 										<div>
