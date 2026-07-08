@@ -111,7 +111,7 @@ export default function Home() {
 	useEffect(() => {
 		const unsubscribe = onAuthStateChanged(auth, (user) => {
 			if (!user) {
-				router.push("/signup");
+				router.push("/get-started");
 				return;
 			}
 
