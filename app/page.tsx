@@ -21,6 +21,12 @@ type Product = {
 	ecoHealthTag: string | null;
 };
 
+type RecipeToCartResult = {
+	matched: Array<{ ingredient: string; productName: string }>;
+	unmatched: string[];
+	fallback: boolean;
+};
+
 function normalizeKey(value: string) {
 	return value.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
@@ -81,9 +87,9 @@ async function resolveImageUrl(value: unknown) {
 }
 
 function formatPrice(price: number) {
-	return new Intl.NumberFormat("en-US", {
+	return new Intl.NumberFormat("en-IN", {
 		style: "currency",
-		currency: "USD",
+		currency: "INR",
 	}).format(price);
 }
 
@@ -114,6 +120,10 @@ export default function Home() {
 	const [fallbackSearch, setFallbackSearch] = useState(false);
 	const [matchedProductNames, setMatchedProductNames] = useState<string[]>([]);
 	const [quantities, setQuantities] = useState<Record<string, number>>({});
+	const [recipeDishName, setRecipeDishName] = useState("");
+	const [recipeLoading, setRecipeLoading] = useState(false);
+	const [recipeResult, setRecipeResult] = useState<RecipeToCartResult | null>(null);
+	const [addedRecipeProductNames, setAddedRecipeProductNames] = useState<string[]>([]);
 	const router = useRouter();
 	const { addToCart } = useCart();
 
@@ -360,6 +370,123 @@ export default function Home() {
 		setMatchedProductNames([]);
 	};
 
+	const handleRecipeSubmit = async (event: FormEvent<HTMLFormElement>) => {
+		event.preventDefault();
+
+		const dishName = recipeDishName.trim();
+
+		if (!dishName) {
+			return;
+		}
+
+		setRecipeLoading(true);
+		setRecipeResult(null);
+
+		try {
+			const response = await fetch("/api/ai/recipe-to-cart", {
+				method: "POST",
+				headers: {
+					"content-type": "application/json",
+				},
+				body: JSON.stringify({
+					dishName,
+					productNames: products.map((product) => product.name),
+				}),
+			});
+
+			const data = (await response.json()) as {
+				matched?: unknown;
+				unmatched?: unknown;
+				fallback?: boolean;
+			};
+
+			const matched = Array.isArray(data.matched)
+				? data.matched.filter(
+						(item): item is { ingredient: string; productName: string } =>
+							typeof item === "object" &&
+							item !== null &&
+							typeof (item as { ingredient?: unknown }).ingredient === "string" &&
+							typeof (item as { productName?: unknown }).productName === "string",
+					)
+				: [];
+
+			const unmatched = Array.isArray(data.unmatched)
+				? data.unmatched.filter((item): item is string => typeof item === "string")
+				: [];
+
+			if (data.fallback || (matched.length === 0 && unmatched.length === 0)) {
+				setRecipeResult({ matched: [], unmatched: [], fallback: true });
+				return;
+			}
+
+			setRecipeResult({ matched, unmatched, fallback: false });
+		} catch {
+			setRecipeResult({ matched: [], unmatched: [], fallback: true });
+		} finally {
+			setRecipeLoading(false);
+		}
+	};
+
+	const handleAddRecipeProduct = (productName: string) => {
+		const product = products.find(
+			(item) => item.name.toLowerCase() === productName.toLowerCase(),
+		);
+
+		if (!product) {
+			return;
+		}
+
+		addToCart(
+			{
+				productId: product.id,
+				name: product.name,
+				price: product.price,
+			},
+			1,
+		);
+
+		setAddedRecipeProductNames((current) => {
+			if (current.includes(product.name.toLowerCase())) {
+				return current;
+			}
+
+			return [...current, product.name.toLowerCase()];
+		});
+	};
+
+	const handleAddAllRecipeProducts = () => {
+		if (!recipeResult?.matched) {
+			return;
+		}
+
+		const matchedProducts = recipeResult.matched
+			.map((item) =>
+				products.find((product) => product.name.toLowerCase() === item.productName.toLowerCase()),
+			)
+			.filter((product): product is Product => Boolean(product));
+
+		matchedProducts.forEach((product) => {
+			addToCart(
+				{
+					productId: product.id,
+					name: product.name,
+					price: product.price,
+				},
+				1,
+			);
+		});
+
+		setAddedRecipeProductNames((current) => {
+			const next = new Set(current);
+
+			matchedProducts.forEach((product) => {
+				next.add(product.name.toLowerCase());
+			});
+
+			return Array.from(next);
+		});
+	};
+
 	if (!authChecked) {
 		return (
 			<main className="flex min-h-screen items-center justify-center bg-slate-950 px-4 text-slate-100">
@@ -422,6 +549,126 @@ export default function Home() {
 							) : null}
 						</div>
 					</form>
+				</section>
+
+				<section className="rounded-3xl border border-cyan-500/20 bg-slate-900/70 p-5 shadow-xl shadow-cyan-950/10 sm:p-6">
+					<div className="flex flex-wrap items-start justify-between gap-3">
+						<div>
+							<div className="flex items-center gap-2">
+								<h2 className="text-xl font-semibold text-white">Cook something?</h2>
+								<span className="inline-flex items-center rounded-full border border-cyan-500/20 bg-cyan-400/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-cyan-300">
+									✨ Powered by AI
+								</span>
+							</div>
+							<p className="mt-1 text-sm text-slate-400">
+								Tell us a dish and we’ll suggest ingredients you can add to your cart.
+							</p>
+						</div>
+					</div>
+
+					<form onSubmit={handleRecipeSubmit} className="mt-4 flex flex-col gap-3 sm:flex-row">
+						<input
+							id="recipe-to-cart"
+							type="text"
+							value={recipeDishName}
+							onChange={(event) => setRecipeDishName(event.target.value)}
+							placeholder="What are you cooking? (e.g. paneer butter masala)"
+							className="flex-1 rounded-2xl border border-cyan-500/20 bg-slate-950/70 px-4 py-3 text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/30"
+						/>
+
+						<button
+							type="submit"
+							disabled={recipeLoading}
+							className="inline-flex items-center justify-center rounded-2xl bg-cyan-400 px-5 py-3 font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
+						>
+							{recipeLoading ? "Finding..." : "Find Ingredients"}
+						</button>
+					</form>
+
+					{recipeResult ? (
+						<div className="mt-5 space-y-4">
+							{recipeResult.fallback || (recipeResult.matched.length === 0 && recipeResult.unmatched.length === 0) ? (
+								<div className="rounded-2xl border border-cyan-500/15 bg-slate-950/70 p-4 text-sm text-slate-300">
+									Couldn't find a recipe for that — try a different dish.
+								</div>
+							) : (
+								<>
+									<div className="flex flex-wrap items-center justify-between gap-3">
+										<div>
+											<p className="text-sm font-semibold uppercase tracking-[0.25em] text-cyan-300/80">
+												Recipe matches
+											</p>
+											<p className="mt-1 text-sm text-slate-400">
+												Add ingredients to your cart in one go.
+											</p>
+										</div>
+										<button
+											type="button"
+											onClick={handleAddAllRecipeProducts}
+											className="rounded-2xl border border-cyan-500/20 bg-slate-950/70 px-4 py-2 text-sm font-semibold text-cyan-300 transition hover:border-cyan-400/40 hover:text-cyan-200"
+										>
+											Add All to Cart
+										</button>
+									</div>
+
+									<div className="space-y-3">
+										{recipeResult.matched.map((item) => {
+											const product = products.find(
+												(productItem) => productItem.name.toLowerCase() === item.productName.toLowerCase(),
+											);
+
+											if (!product) {
+												return null;
+											}
+
+											const added = addedRecipeProductNames.includes(product.name.toLowerCase());
+
+											return (
+												<div
+													key={`${item.ingredient}-${item.productName}`}
+													className="flex flex-col gap-3 rounded-2xl border border-cyan-500/15 bg-slate-950/70 p-4 sm:flex-row sm:items-center sm:justify-between"
+												>
+													<div className="space-y-1">
+														<div className="flex flex-wrap items-center gap-2">
+															<span className="text-sm font-semibold text-white">{item.ingredient}</span>
+															<span className="text-cyan-300">→</span>
+															<span className="text-sm text-cyan-200">{item.productName}</span>
+														</div>
+														<p className="text-sm text-slate-400">{formatPrice(product.price)}</p>
+													</div>
+
+													<div className="flex items-center gap-3">
+														{added ? (
+															<span className="inline-flex items-center rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-300">
+																✓ Recipe Match
+															</span>
+														) : (
+															<button
+																type="button"
+																onClick={() => handleAddRecipeProduct(item.productName)}
+																className="rounded-2xl bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400"
+															>
+																Add
+															</button>
+														)}
+													</div>
+												</div>
+											);
+										})}
+									</div>
+
+									{recipeResult.unmatched.length > 0 ? (
+										<div className="rounded-2xl border border-dashed border-cyan-500/20 bg-slate-950/60 p-4">
+											<p className="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-300/70">
+												Not available in our store:
+											</p>
+											<p className="mt-2 text-sm text-slate-400">{recipeResult.unmatched.join(", ")}</p>
+										</div>
+									) : null}
+								</>
+							)}
+						</div>
+					) : null}
 				</section>
 
 				<section className="space-y-4">
