@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo } from "react";
 import { useCart } from "@/lib/CartContext";
 
@@ -95,13 +96,20 @@ export default function CartPage() {
 						))}
 
 						<div className="rounded-3xl border border-slate-200 bg-slate-900 p-6 text-white shadow-sm">
-							<div className="flex items-center justify-between gap-4">
+							<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 								<div>
 									<p className="text-sm uppercase tracking-[0.2em] text-slate-300">
 										Subtotal
 									</p>
 									<p className="mt-1 text-2xl font-semibold">{formatCurrency(subtotal)}</p>
 								</div>
+
+								<Link
+									href="/checkout"
+									className="inline-flex items-center justify-center rounded-2xl bg-cyan-400 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
+								>
+									Proceed to Checkout
+								</Link>
 							</div>
 						</div>
 					</div>

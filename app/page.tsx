@@ -8,6 +8,7 @@ import { collection, getDocs } from "firebase/firestore";
 import { getDownloadURL, ref } from "firebase/storage";
 import { auth, db, storage } from "../lib/firebase";
 import { useCart } from "@/lib/CartContext";
+import Tag from "./components/Tag";
 
 type Product = {
 	id: string;
@@ -16,6 +17,8 @@ type Product = {
 	price: number;
 	stock: number;
 	imageUrl: string;
+	tags: string[];
+	ecoHealthTag: string | null;
 };
 
 function normalizeKey(value: string) {
@@ -110,6 +113,7 @@ export default function Home() {
 	const [searchLoading, setSearchLoading] = useState(false);
 	const [fallbackSearch, setFallbackSearch] = useState(false);
 	const [matchedProductNames, setMatchedProductNames] = useState<string[]>([]);
+	const [quantities, setQuantities] = useState<Record<string, number>>({});
 	const router = useRouter();
 	const { addToCart } = useCart();
 
@@ -166,6 +170,17 @@ export default function Home() {
 							"productImage",
 							"photo",
 						]);
+						const rawTags = getFieldValue(data, ["tags", "Tags"]);
+						const tags = Array.isArray(rawTags)
+							? rawTags.filter((tag): tag is string => typeof tag === "string")
+							: [];
+						const rawEcoHealthTag = getFieldValue(data, [
+							"ecoHealthTag",
+							"ecoHealth",
+							"EcoHealthTag",
+						]);
+						const ecoHealthTag =
+							typeof rawEcoHealthTag === "string" ? rawEcoHealthTag : null;
 
 						return {
 							id: document.id,
@@ -174,6 +189,8 @@ export default function Home() {
 							price,
 							stock,
 							imageUrl: await resolveImageUrl(imageSource),
+							tags,
+							ecoHealthTag,
 						};
 					}),
 				);
@@ -548,7 +565,18 @@ export default function Home() {
 															</p>
 														</div>
 
-														<div className="flex items-center justify-between gap-3 rounded-2xl bg-slate-800 px-4 py-3 text-sm text-slate-300">
+														{product.tags.length > 0 || product.ecoHealthTag ? (
+										<div className="flex flex-wrap gap-2">
+											{product.tags.map((tag) => (
+												<Tag key={tag} label={tag} variant="info" />
+											))}
+											{product.ecoHealthTag ? (
+												<Tag label={product.ecoHealthTag} variant="success" />
+											) : null}
+										</div>
+									) : null}
+
+									<div className="flex items-center justify-between gap-3 rounded-2xl bg-slate-800 px-4 py-3 text-sm text-slate-300">
 															<span>Stock</span>
 															<span className="font-semibold text-white">{product.stock}</span>
 														</div>
@@ -559,23 +587,57 @@ export default function Home() {
 																{formatPrice(product.price)}
 															</span>
 														</div>
+										<div className="flex items-center justify-between gap-2">
+											<button
+												type="button"
+												onClick={() =>
+													setQuantities((current) => ({
+														...current,
+														[product.id]: Math.max(1, (current[product.id] ?? 1) - 1),
+													}))
+											}
+											className="flex h-9 w-9 items-center justify-center rounded-full border border-cyan-500/20 bg-slate-950 text-lg font-semibold text-cyan-300 transition hover:border-cyan-400/40 hover:text-cyan-200 disabled:cursor-not-allowed disabled:opacity-50"
+											disabled={(quantities[product.id] ?? 1) <= 1}
+											aria-label={`Decrease quantity for ${product.name}`}
+										>
+											-
+										</button>
 
-														<button
-															type="button"
-															onClick={() =>
-																addToCart(
-																	{
-																		productId: product.id,
-																		name: product.name,
-																		price: product.price,
-																	},
-																	1,
-																)
-															}
-															className="rounded-2xl bg-cyan-500 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:ring-offset-2 focus:ring-offset-slate-950"
-														>
-															Add to Cart
-														</button>
+											<div className="flex h-9 min-w-10 items-center justify-center rounded-full border border-cyan-500/20 bg-slate-950 px-3 text-sm font-semibold text-white">
+												{quantities[product.id] ?? 1}
+											</div>
+
+											<button
+												type="button"
+												onClick={() =>
+													setQuantities((current) => ({
+														...current,
+														[product.id]: (current[product.id] ?? 1) + 1,
+													}))
+											}
+											className="flex h-9 w-9 items-center justify-center rounded-full border border-cyan-500/20 bg-slate-950 text-lg font-semibold text-cyan-300 transition hover:border-cyan-400/40 hover:text-cyan-200"
+											aria-label={`Increase quantity for ${product.name}`}
+										>
+											+
+										</button>
+										</div>
+
+										<button
+											type="button"
+											onClick={() => {
+												addToCart(
+													{
+														productId: product.id,
+														name: product.name,
+														price: product.price,
+													},
+													quantities[product.id] ?? 1,
+												);
+											}}
+										className="rounded-2xl bg-cyan-500 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:ring-offset-2 focus:ring-offset-slate-950"
+										>
+											Add to Cart
+										</button>
 													</div>
 												</article>
 											))}
