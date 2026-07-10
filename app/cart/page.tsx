@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useCart } from "@/lib/CartContext";
 
 function formatCurrency(value: number) {
@@ -18,6 +18,10 @@ export default function CartPage() {
 		() => cartItems.reduce((total, item) => total + item.price * item.quantity, 0),
 		[cartItems],
 	);
+
+	// Budget Guard state
+	const [budget, setBudget] = useState<number | null>(null);
+	const [budgetInput, setBudgetInput] = useState<string>("");
 
 	return (
 		<main className="min-h-screen bg-slate-50 px-4 py-12 text-slate-900 sm:px-6 lg:px-8">
@@ -41,6 +45,92 @@ export default function CartPage() {
 							Clear Cart
 						</button>
 					) : null}
+				</div>
+
+				{/* Budget Guard: place above cart items list */}
+				<div className="mb-4 rounded-3xl border border-slate-200 bg-slate-900 p-4 text-white shadow-sm">
+					<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+						<div>
+							<p className="text-sm font-medium text-slate-300">Set a budget</p>
+							<div className="mt-2 flex items-center gap-2">
+								<input
+									type="number"
+									inputMode="numeric"
+									min={0}
+									value={budgetInput}
+									onChange={(e) => setBudgetInput(e.target.value)}
+									placeholder="e.g. 500"
+									className="w-32 rounded-full bg-slate-800/60 px-3 py-2 text-sm text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+								/>
+								<button
+									type="button"
+									onClick={() => {
+										const n = Number(budgetInput);
+										setBudget(!Number.isNaN(n) && n > 0 ? n : null);
+									}}
+									className="rounded-full bg-cyan-400 px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-cyan-300"
+								>
+									Set Budget
+								</button>
+
+								{budget !== null && (
+									<button
+										type="button"
+										onClick={() => {
+										setBudget(null);
+										setBudgetInput("");
+									}}
+										className="ml-2 rounded-full bg-white/5 px-3 py-2 text-sm font-medium text-slate-200 hover:bg-white/10"
+									>
+										Clear budget
+									</button>
+								)}
+							</div>
+						</div>
+					</div>
+
+					{budget !== null && (
+						<div className="mt-4">
+							<div className="flex items-center justify-between text-sm text-slate-300">
+								<div>
+									{formatCurrency(subtotal)} of {formatCurrency(budget)} spent
+								</div>
+								<div>
+									{subtotal > budget ? (
+										<span className="inline-flex items-center gap-2 rounded-full bg-rose-600/20 px-2 py-1 text-xs font-semibold text-rose-300">
+											Over Budget
+										</span>
+									) : subtotal > 0 && subtotal / budget >= 0.8 ? (
+										<span className="inline-flex items-center gap-2 rounded-full bg-amber-500/10 px-2 py-1 text-xs font-semibold text-amber-300">
+											Near Budget
+										</span>
+									) : null}
+								</div>
+							</div>
+
+							{/* progress bar */}
+							<div className="mt-2 h-3 w-full overflow-hidden rounded-full bg-white/5">
+								{(() => {
+									const pct = budget ? Math.min(100, (subtotal / budget) * 100) : 0;
+									const ratio = budget ? subtotal / budget : 0;
+									const barColor =
+										ratio > 1 ? "bg-rose-400" : ratio >= 0.8 ? "bg-amber-400" : "bg-cyan-400";
+									return (
+										<div
+											className={`${barColor} h-3 transition-all duration-300`}
+											style={{ width: `${pct}%` }}
+										/>
+									);
+								})()}
+							</div>
+
+							{budget !== null && subtotal > budget && (
+								<p className="mt-3 text-sm text-rose-300">
+									You're {formatCurrency(subtotal - budget)} over your budget.
+								</p>
+								)}
+						</div>
+					)}
 				</div>
 
 				{cartItems.length === 0 ? (

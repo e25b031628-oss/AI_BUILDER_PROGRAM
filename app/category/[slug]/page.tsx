@@ -107,6 +107,7 @@ export default function CategoryPage() {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState("");
 	const { addToCart } = useCart();
+	const [quantities, setQuantities] = useState<Record<string, number>>({});
 
 	useEffect(() => {
 		let isMounted = true;
@@ -263,22 +264,59 @@ export default function CategoryPage() {
 										</span>
 									</div>
 
-									<button
-										type="button"
-										onClick={() =>
-											addToCart(
-												{
-													productId: product.id,
-													name: product.name,
-													price: product.price,
-												},
-												1,
-											)
-										}
-										className="rounded-2xl bg-cyan-500 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:ring-offset-2 focus:ring-offset-slate-950"
-									>
-										Add to Cart
-									</button>
+									<div className="flex items-center justify-between gap-2">
+										<div className="flex items-center gap-2">
+											<button
+												type="button"
+												onClick={() =>
+													setQuantities((current) => ({
+														...current,
+														[product.id]: Math.max(1, (current[product.id] ?? 1) - 1),
+													}))
+												}
+												className="flex h-9 w-9 items-center justify-center rounded-full border border-cyan-500/20 bg-slate-950 text-lg font-semibold text-cyan-300 transition hover:border-cyan-400/40 hover:text-cyan-200 disabled:cursor-not-allowed disabled:opacity-50"
+												disabled={(quantities[product.id] ?? 1) <= 1}
+												aria-label={`Decrease quantity for ${product.name}`}
+											>
+												-
+											</button>
+
+											<div className="flex h-9 min-w-10 items-center justify-center rounded-full border border-cyan-500/20 bg-slate-950 px-3 text-sm font-semibold text-white">
+												{quantities[product.id] ?? 1}
+											</div>
+
+											<button
+												type="button"
+												onClick={() =>
+													setQuantities((current) => ({
+														...current,
+														[product.id]: (current[product.id] ?? 1) + 1,
+													}))
+												}
+												className="flex h-9 w-9 items-center justify-center rounded-full border border-cyan-500/20 bg-slate-950 text-lg font-semibold text-cyan-300 transition hover:border-cyan-400/40 hover:text-cyan-200"
+												aria-label={`Increase quantity for ${product.name}`}
+											>
+												+
+											</button>
+										</div>
+
+										<button
+											type="button"
+											onClick={() => {
+												addToCart(
+													{
+														productId: product.id,
+														name: product.name,
+														price: product.price,
+													},
+													quantities[product.id] ?? 1,
+												);
+											}}
+											className="rounded-2xl bg-cyan-500 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:ring-offset-2 focus:ring-offset-slate-950"
+										>
+											Add to Cart
+										</button>
+									</div>
 								</div>
 							</article>
 						))}

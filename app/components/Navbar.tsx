@@ -66,6 +66,12 @@ export default function Navbar() {
 						>
 							Orders
 						</Link>
+						<Link
+							href="/profile"
+							className="rounded-full px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-white/5 hover:text-cyan-300"
+						>
+							Profile
+						</Link>
 					</nav>
 
 					<div className="h-6 w-px bg-white/10" />
