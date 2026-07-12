@@ -2,7 +2,15 @@ import { NextResponse } from "next/server";
 import { db } from "../../../lib/firebase";
 import { addDoc, collection, getDocs, query, where } from "firebase/firestore";
 
-const productsToSeed = [
+type SeedProduct = {
+	name: string;
+	category: string;
+	price: number;
+	stock: number;
+	imageUrl?: string;
+};
+
+const productsToSeed: SeedProduct[] = [
 	{ name: "Paneer 200g", category: "dairy", price: 90, stock: 40, imageUrl: "" },
 	{ name: "Tomato 1kg", category: "vegetables", price: 35, stock: 60 },
 	{ name: "Onion 1kg", category: "vegetables", price: 30, stock: 80 },
