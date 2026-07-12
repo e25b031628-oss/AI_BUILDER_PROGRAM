@@ -134,6 +134,14 @@ export default function Home() {
 				return;
 			}
 
+			if (user.emailVerified === false) {
+				router.push(
+					"/get-started?message=" +
+						encodeURIComponent("Please verify your email before continuing")
+				);
+				return;
+			}
+
 			setAuthChecked(true);
 		});
 
@@ -498,16 +506,16 @@ export default function Home() {
 	}
 
 	return (
-		<main className="min-h-screen bg-slate-950 px-4 py-8 text-slate-100 sm:px-6 lg:px-8">
-			<div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
-				<header className="rounded-3xl border border-cyan-500/15 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 p-4 shadow-2xl shadow-cyan-950/10 sm:p-6">
+		<main className="min-h-screen bg-slate-950 px-4 py-6 text-slate-100 sm:px-6 lg:px-8">
+			<div className="mx-auto flex w-full max-w-7xl flex-col gap-5">
+				<header className="rounded-3xl border border-cyan-500/15 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 p-4 shadow-2xl shadow-cyan-950/10 sm:p-5">
 					<p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-300/80">
 						Smart Cart
 					</p>
-					<h1 className="mt-3 text-2xl font-semibold tracking-tight text-white sm:text-4xl">
+					<h1 className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
 						Fresh categories, fast shopping.
 					</h1>
-					<p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300 sm:text-sm">
+					<p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
 						Browse products by category or explore the full catalog below. Category
 						tiles link directly to the matching Firestore-backed category pages.
 					</p>
@@ -552,7 +560,7 @@ export default function Home() {
 
                 
 
-				<section className="rounded-3xl border border-cyan-500/15 bg-slate-900/60 p-4 shadow-lg shadow-cyan-950/10 sm:p-5">
+				<section className="rounded-2xl border border-cyan-500/10 bg-slate-900/50 p-4 shadow-md shadow-cyan-950/10 sm:p-4">
 					<div className="flex flex-wrap items-start justify-between gap-3">
 						<div>
 							<div className="flex items-center gap-2">
@@ -672,7 +680,7 @@ export default function Home() {
 					) : null}
 				</section>
 
-				<section className="space-y-4">
+				<section className="space-y-3">
 					<div className="flex items-end justify-between gap-4">
 						<div>
 							<p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-300/80">
@@ -729,7 +737,7 @@ export default function Home() {
 					)}
 				</section>
 
-				<section id="products-section" className="space-y-6">
+				<section id="products-section" className="space-y-5">
 					<div className="flex items-end justify-between gap-4">
 						<div>
 							<p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-300/80">
@@ -759,7 +767,7 @@ export default function Home() {
 								: "No products found in Firestore."}
 						</div>
 					) : (
-						<div className="space-y-6">
+						<div className="space-y-5">
 							{filteredGroupedProducts.map((group) => (
 								<section key={group.slug} className="space-y-4">
 									<div className="flex items-end justify-between gap-4">
@@ -781,7 +789,7 @@ export default function Home() {
 											{group.products.map((product) => (
 												<article
 													key={product.id}
-													className="w-[18rem] shrink-0 overflow-hidden rounded-3xl border border-cyan-500/15 bg-slate-900/80 shadow-xl shadow-cyan-950/10 transition-transform duration-200 hover:-translate-y-1 hover:border-cyan-400/30 hover:shadow-cyan-500/10"
+													className="w-[18rem] shrink-0 overflow-hidden rounded-2xl border border-cyan-500/10 bg-slate-900/80 shadow-lg shadow-cyan-950/10 transition-transform duration-200 hover:-translate-y-1 hover:border-cyan-400/25 hover:shadow-cyan-500/10"
 												>
 													<div className="aspect-[4/3] bg-slate-800">
 														{product.imageUrl ? (
@@ -803,7 +811,7 @@ export default function Home() {
 														)}
 													</div>
 
-													<div className="flex flex-col gap-3 p-4">
+													<div className="flex flex-col gap-2.5 p-3">
 														<div className="space-y-1">
 															<h4 className="text-lg font-semibold leading-6 text-white">
 																{product.name}
@@ -829,7 +837,7 @@ export default function Home() {
 															<span className="font-semibold text-white">{product.stock}</span>
 														</div>
 
-														<div className="flex items-center justify-between gap-3 rounded-2xl bg-slate-950 px-4 py-3 text-sm text-white ring-1 ring-cyan-500/15">
+														<div className="flex items-center justify-between gap-3 rounded-2xl bg-slate-950 px-3 py-2.5 text-sm text-white ring-1 ring-cyan-500/10">
 															<span>Price</span>
 															<span className="font-semibold text-cyan-300">
 																{formatPrice(product.price)}

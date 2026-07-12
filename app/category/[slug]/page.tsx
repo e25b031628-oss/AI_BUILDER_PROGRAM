@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { collection, getDocs, query, where } from "firebase/firestore";
@@ -189,16 +190,30 @@ export default function CategoryPage() {
 	}, [slug]);
 
 	return (
-		<main className="min-h-screen bg-slate-950 px-4 py-12 text-slate-100 sm:px-6 lg:px-8">
-			<div className="mx-auto flex w-full max-w-7xl flex-col gap-8">
-				<header className="rounded-3xl border border-cyan-500/20 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 p-6 shadow-2xl shadow-cyan-950/20 sm:p-8">
+		<main className="min-h-screen bg-slate-950 px-4 py-6 text-slate-100 sm:px-6 lg:px-8">
+			<div className="mx-auto flex w-full max-w-7xl flex-col gap-5">
+				<header className="rounded-3xl border border-cyan-500/15 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 p-5 shadow-2xl shadow-cyan-950/20 sm:p-6">
+					<Link
+						href="/"
+						className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-cyan-300 transition hover:text-cyan-200"
+					>
+						<span aria-hidden="true">←</span>
+						<span>Back to Home</span>
+					</Link>
+					<Link
+						href="/"
+						className="mb-3 inline-flex items-center gap-2 text-sm font-medium text-cyan-300 transition hover:text-cyan-200"
+					>
+						<span aria-hidden="true">←</span>
+						<span>Back to Home</span>
+					</Link>
 					<p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-300/80">
 						Category
 					</p>
-					<h1 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+					<h1 className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
 						{titleCase(slug)}
 					</h1>
-					<p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300 sm:text-base">
+					<p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
 						Matching products from Firestore where the category field equals “{slug}”.
 					</p>
 				</header>
@@ -216,7 +231,7 @@ export default function CategoryPage() {
 						No products were found in {titleCase(slug)}. Try a different category.
 					</div>
 				) : (
-					<div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+					<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 						{products.map((product) => (
 							<article
 								key={product.id}
@@ -242,7 +257,7 @@ export default function CategoryPage() {
 									)}
 								</div>
 
-								<div className="flex flex-col gap-4 p-5">
+								<div className="flex flex-col gap-2.5 p-3">
 									<div className="space-y-1">
 										<h2 className="text-lg font-semibold leading-6 text-white">
 											{product.name}
@@ -252,12 +267,12 @@ export default function CategoryPage() {
 										</p>
 									</div>
 
-									<div className="flex items-center justify-between gap-3 rounded-2xl bg-slate-800 px-4 py-3 text-sm text-slate-300">
+									<div className="flex items-center justify-between gap-3 rounded-2xl bg-slate-800 px-3 py-2.5 text-sm text-slate-300">
 										<span>Stock</span>
 										<span className="font-semibold text-white">{product.stock}</span>
 									</div>
 
-									<div className="flex items-center justify-between gap-3 rounded-2xl bg-slate-950 px-4 py-3 text-sm text-white ring-1 ring-cyan-500/15">
+									<div className="flex items-center justify-between gap-3 rounded-2xl bg-slate-950 px-3 py-2.5 text-sm text-white ring-1 ring-cyan-500/10">
 										<span>Price</span>
 										<span className="font-semibold text-cyan-300">
 											{formatPrice(product.price)}
@@ -274,7 +289,7 @@ export default function CategoryPage() {
 														[product.id]: Math.max(1, (current[product.id] ?? 1) - 1),
 													}))
 												}
-												className="flex h-9 w-9 items-center justify-center rounded-full border border-cyan-500/20 bg-slate-950 text-lg font-semibold text-cyan-300 transition hover:border-cyan-400/40 hover:text-cyan-200 disabled:cursor-not-allowed disabled:opacity-50"
+												className="flex h-9 w-9 items-center justify-center rounded-full border border-cyan-500/15 bg-slate-950 text-lg font-semibold text-cyan-300 transition hover:border-cyan-400/30 hover:text-cyan-200 disabled:cursor-not-allowed disabled:opacity-50"
 												disabled={(quantities[product.id] ?? 1) <= 1}
 												aria-label={`Decrease quantity for ${product.name}`}
 											>
@@ -293,7 +308,7 @@ export default function CategoryPage() {
 														[product.id]: (current[product.id] ?? 1) + 1,
 													}))
 												}
-												className="flex h-9 w-9 items-center justify-center rounded-full border border-cyan-500/20 bg-slate-950 text-lg font-semibold text-cyan-300 transition hover:border-cyan-400/40 hover:text-cyan-200"
+												className="flex h-9 w-9 items-center justify-center rounded-full border border-cyan-500/15 bg-slate-950 text-lg font-semibold text-cyan-300 transition hover:border-cyan-400/30 hover:text-cyan-200"
 												aria-label={`Increase quantity for ${product.name}`}
 											>
 												+
@@ -312,7 +327,7 @@ export default function CategoryPage() {
 													quantities[product.id] ?? 1,
 												);
 											}}
-											className="rounded-2xl bg-cyan-500 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:ring-offset-2 focus:ring-offset-slate-950"
+											className="rounded-2xl bg-cyan-500 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:ring-offset-2 focus:ring-offset-slate-950"
 										>
 											Add to Cart
 										</button>

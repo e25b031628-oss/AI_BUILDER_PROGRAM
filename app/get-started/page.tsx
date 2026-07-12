@@ -1,7 +1,7 @@
 "use client";
 
-import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
+import { FormEvent, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
 	createUserWithEmailAndPassword,
 	signInWithEmailAndPassword,
@@ -12,11 +12,19 @@ type TabMode = "login" | "signup";
 
 export default function GetStartedPage() {
 	const router = useRouter();
+	const searchParams = useSearchParams();
 	const [activeTab, setActiveTab] = useState<TabMode>("login");
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [loading, setLoading] = useState(false);
 	const [message, setMessage] = useState("");
+
+	useEffect(() => {
+		const nextMessage = searchParams.get("message");
+		if (nextMessage) {
+			setMessage(decodeURIComponent(nextMessage));
+		}
+	}, [searchParams]);
 
 	const handleTabChange = (tab: TabMode) => {
 		setActiveTab(tab);

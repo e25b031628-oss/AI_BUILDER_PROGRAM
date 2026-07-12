@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
 import { auth } from "../../lib/firebase";
 
 export default function SignupPage() {
@@ -18,11 +18,16 @@ export default function SignupPage() {
 		setMessage("");
 
 		try {
-			await createUserWithEmailAndPassword(auth, email, password);
-			setMessage("Account created successfully.");
+			const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+			await sendEmailVerification(userCredential.user);
+			const verificationMessage =
+				"Account created! Please check your email and verify your account before logging in.";
+			setMessage(verificationMessage);
 			setEmail("");
 			setPassword("");
-			router.push("/");
+			setTimeout(() => {
+				router.push(`/get-started?message=${encodeURIComponent(verificationMessage)}`);
+			}, 3000);
 		} catch (error) {
 			setMessage(
 				error instanceof Error ? error.message : "Failed to create account."
