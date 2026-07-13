@@ -2,7 +2,7 @@
 
 **Smart Cart** is a full-stack grocery delivery web app built solo in a bootcamp/hackathon setting. It combines a complete e-commerce shopping flow with a layer of practical, low-risk AI automation — smart search, AI-generated recipe shopping lists, auto-tagging, and out-of-stock substitutions — all built to survive a live demo even if any single AI call fails.
 
-> 🔗 **Live Demo:** [ADD DEPLOYED VERCEL URL HERE]
+> 🔗 **Live Demo:** ai-builder-program-one.vercel.app
 
 ---
 
