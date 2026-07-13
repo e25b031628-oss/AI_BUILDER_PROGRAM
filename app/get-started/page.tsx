@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
 	createUserWithEmailAndPassword,
@@ -11,7 +11,7 @@ import auth from "../../lib/firebase";
 
 type TabMode = "login" | "signup";
 
-export default function GetStartedPage() {
+function GetStartedContent() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const [activeTab, setActiveTab] = useState<TabMode>("login");
@@ -202,3 +202,19 @@ export default function GetStartedPage() {
 		</main>
 	);
 }
+
+	export default function GetStartedPage() {
+		return (
+			<Suspense
+				fallback={
+					<main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 px-4 text-slate-100">
+						<section className="rounded-3xl border border-white/10 bg-white/5 px-8 py-6 shadow-2xl shadow-black/30 backdrop-blur">
+							<p className="text-sm text-slate-300">Loading...</p>
+						</section>
+					</main>
+				}
+			>
+				<GetStartedContent />
+			</Suspense>
+		);
+	}
