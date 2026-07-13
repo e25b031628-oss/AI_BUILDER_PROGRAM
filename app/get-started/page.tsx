@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
 	createUserWithEmailAndPassword,
+	sendEmailVerification,
 	signInWithEmailAndPassword,
 } from "firebase/auth";
 import auth from "../../lib/firebase";
@@ -18,6 +19,8 @@ export default function GetStartedPage() {
 	const [password, setPassword] = useState("");
 	const [loading, setLoading] = useState(false);
 	const [message, setMessage] = useState("");
+	const [resendLoading, setResendLoading] = useState(false);
+	const [resendMessage, setResendMessage] = useState("");
 
 	useEffect(() => {
 		const nextMessage = searchParams.get("message");
@@ -29,6 +32,28 @@ export default function GetStartedPage() {
 	const handleTabChange = (tab: TabMode) => {
 		setActiveTab(tab);
 		setMessage("");
+	};
+
+	const handleResendVerification = async () => {
+		setResendLoading(true);
+		setResendMessage("");
+
+		try {
+			const user = auth.currentUser;
+			if (!user) {
+				setResendMessage("Please log in first, then click resend.");
+				return;
+			}
+
+			await sendEmailVerification(user);
+			setResendMessage("Verification email sent again! Please check your inbox and spam/junk folder.");
+		} catch (error) {
+			setResendMessage(
+				error instanceof Error ? error.message : "Failed to send verification email."
+			);
+		} finally {
+			setResendLoading(false);
+		}
 	};
 
 	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -147,6 +172,26 @@ export default function GetStartedPage() {
 								: "Sign up"}
 					</button>
 				</form>
+
+				<div className="mt-6 rounded-2xl border border-white/10 bg-slate-950/70 p-4">
+					<p className="mb-3 text-sm text-slate-300">
+						Need a new verification email? If you already signed in, click below.
+					</p>
+					<button
+						type="button"
+						onClick={handleResendVerification}
+						disabled={resendLoading}
+						className="flex w-full items-center justify-center rounded-2xl bg-slate-800 px-4 py-3 text-sm font-semibold text-slate-100 transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+					>
+						{resendLoading ? "Sending..." : "Resend verification email"}
+					</button>
+
+					{resendMessage ? (
+						<p className="mt-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
+							{resendMessage}
+						</p>
+					) : null}
+				</div>
 
 				{message ? (
 					<p className="mt-5 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">

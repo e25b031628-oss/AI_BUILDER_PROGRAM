@@ -21,7 +21,7 @@ export default function SignupPage() {
 			const userCredential = await createUserWithEmailAndPassword(auth, email, password);
 			await sendEmailVerification(userCredential.user);
 			const verificationMessage =
-				"Account created! Please check your email and verify your account before logging in.";
+				"Account created! We've sent a verification link to your email — please check your inbox (and your spam/junk folder, just in case) before logging in.";
 			setMessage(verificationMessage);
 			setEmail("");
 			setPassword("");

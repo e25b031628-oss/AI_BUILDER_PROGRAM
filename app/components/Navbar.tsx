@@ -27,7 +27,7 @@ export default function Navbar() {
 	const handleLogout = async () => {
 		try {
 			await signOut(auth);
-			router.push("/login");
+			router.push("/get-started");
 		} catch {
 			// Ignore sign-out errors for now; the UI will still reflect the current auth state.
 		}

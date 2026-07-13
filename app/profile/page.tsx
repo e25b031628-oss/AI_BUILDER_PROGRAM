@@ -108,7 +108,9 @@ export default function ProfilePage() {
     setError(null);
     try {
       await sendPasswordResetEmail(auth, user.email);
-      setMessage("Password reset email sent.");
+      setMessage(
+        "Password reset link sent! Please check your inbox — and your spam/junk folder, in case it lands there — for the reset link."
+      );
     } catch (err) {
       console.error(err);
       setError("Failed to send password reset email.");
